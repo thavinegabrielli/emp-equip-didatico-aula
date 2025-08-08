@@ -1,50 +1,58 @@
 import { DatabaseModel } from "./DatabaseModel.js";
 
+// Recupera conexão com o banco de dados
 const dataBase = new DatabaseModel().pool;
 
+/**
+ * Classe que representa o usuário do sistema
+ */
 export class Usuario {
-    private idUsuario: number = 0;
-    private nome: string;
-    private tipoUsuario: string;
-    private contato: string;
-    
-    public constructor (_nome:string, _tipoUsuario:string, _contato:string){
+    private idUsuario: number = 0; // Identificador único do aluno
+    private nome: string; 
+    private tipoUsuario: string; 
+    private contato: string; 
+
+    public constructor (_nome:string, _tipoUsuario: string, _contato: string ){
         this.nome = _nome;
         this.tipoUsuario = _tipoUsuario;
-        this.contato = _contato;
+        this.contato = _contato;        
     }
-
-    public getidUsuario(): number{
+    
+    public getIdUsuario(): number{
         return this.idUsuario;
     }
 
-    public setidUsuario(_idUsuario:number):void{
+    public setIdUsuario(_idUsuario: number): void{
         this.idUsuario = _idUsuario;
     }
 
- public getnome(): string{
+    
+    public getNome() {  
         return this.nome;
     }
 
-    public setnome(_nome:string):void{
+    public setNome(_nome: string){  
         this.nome = _nome;
     }
 
-     public gettipoUsuario(): string{
+    public setTipoUsuario(_tipoUsuario: string){  
+        this.tipoUsuario = _tipoUsuario;
+    }
+
+    public getTipoUsuario() {
         return this.tipoUsuario;
     }
 
-    public settipoUsuario(_tipoUsuario:string):void{
-        this.nome = this.tipoUsuario;
+    public setContato(_contato: string) {
+        this.contato = _contato;
     }
 
-     public getcontato(): string{
+    public getContato() {
         return this.contato;
     }
 
-    public setcontato(_contato:string):void{
-        this.nome = this.contato;
-    }
+    // MÉTODO PARA ACESSAR O BANCO DE DADOS
+    // CRUD Create - READ - Update - Delete
 
     static async listarUsuarios(): Promise<Array<Usuario> | null> {
         // Criando lista vazia para armazenar os alunos
@@ -68,7 +76,7 @@ export class Usuario {
                     usuario.contato
                 );
                 // adicionando o ID ao objeto
-                novoUsuario.setidUsuario(usuario.id_usuario);
+                novoUsuario.setIdUsuario(usuario.id_usuario);
                 
                 // adicionando o usuario a lista
                 listaDeUsuarios.push(novoUsuario);
@@ -82,4 +90,96 @@ export class Usuario {
         }
     }
 
+    static async cadastrarUsuario(usuario: Usuario): Promise<Boolean> {      
+        try {
+            // Cria a consulta (query) para inserir o registro de um usuario no banco de dados, retorna o ID do usuario criado 
+            const queryInsertUsuario = `
+                INSERT INTO Usuario (nome, tipo_usuario, contato)
+                VALUES (
+                    '${usuario.getNome()}',
+                    '${usuario.getTipoUsuario()}',
+                    '${usuario.getContato()}'
+                )
+                RETURNING id_usuario;`;
+
+            // Executa a query no banco de dados e armazena o resultado
+            const result = await dataBase.query(queryInsertUsuario);
+
+            // verifica se a quantidade de linhas que foram alteradas é maior que 0
+            if (result.rows.length > 0) {
+                // Exibe a mensagem de sucesso
+                console.log(`Usuario cadastrado com sucesso. ID: ${result.rows[0].id_usuario}`);
+                // retorna verdadeiro
+                return true;
+            }
+
+            // caso a consulta não tenha tido sucesso, retorna falso
+            return false;
+        // captura erro
+        } catch (error) {
+            // Exibe mensagem com detalhes do erro no console
+            console.error(`Erro ao cadastrar usuario: ${error}`);
+            // retorna falso
+            return false;
+        }
+    }
+
+
+    static async removerUsuario(idUsuario: number): Promise<Boolean> {
+        // variável para controle de resultado da consulta (query)
+        let queryResult = false;
+    
+        try {        
+
+            // Construção da query SQL para deletar o Aluno.
+            const queryDeleteUsuario = `DELETE FROM Usuario WHERE id_usuario=${idUsuario};`;
+    
+            // Executa a query de exclusão e verifica se a operação foi bem-sucedida.
+            await dataBase.query(queryDeleteUsuario)
+            .then((result) => {
+                if (result.rowCount != 0) {
+                    queryResult = true; // Se a operação foi bem-sucedida, define queryResult como true.
+                }
+            });
+    
+            // retorna o resultado da query
+            return queryResult;
+
+        // captura qualquer erro que aconteça
+        } catch (error) {
+            // Em caso de erro na consulta, exibe o erro no console e retorna false.
+            console.log(`Erro na consulta: ${error}`);
+            // retorna false
+            return queryResult;
+        }
+    }
+
+
+    static async atualizarUsuario(usuario: Usuario): Promise<Boolean> {
+        // Variável para armazenar o resultado da operação.
+        let queryResult = false; 
+        try {
+            // Construção da query SQL para atualizar os dados do usuario.
+            const queryAtualizaUsuario = `UPDATE Usuario SET 
+                                            nome = '${usuario.getNome()}', 
+                                            tipo_usuario = '${usuario.getTipoUsuario()}',
+                                            contato = '${usuario.getContato()}'                                                                                    
+                                        WHERE id_usuario = ${usuario.idUsuario}`;
+
+            // Executa a query de atualização e verifica se a operação foi bem-sucedida.
+            await dataBase.query(queryAtualizaUsuario)
+            .then((result) => {
+                if (result.rowCount != 0) {
+                    queryResult = true; // Se a operação foi bem-sucedida, define queryResult como true.
+                }
+            });
+
+            // Retorna o resultado da operação para quem chamou a função.
+            return queryResult;
+        } catch (error) {
+            // Em caso de erro na consulta, exibe o erro no console e retorna false.
+            console.log(`Erro na consulta: ${error}`);
+            return queryResult;
+        }
+    }
 }
