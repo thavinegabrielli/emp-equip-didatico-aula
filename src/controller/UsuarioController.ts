@@ -91,15 +91,45 @@ class UsuarioController extends Usuario {
 
             // Chama o método para atualizar o cadastro do aluno no banco de dados
             if (await Usuario.atualizarUsuario(usuario)) {
-                return res.status(200).json({ mensagem: "Usuario atualizado com sucesso!" });
+                return res.status(200).json({ mensagem: "Cadastro atualizado com sucesso!" });
             } else {
-                return res.status(400).json('Não foi possível atualizar o usuario no banco de dados');
+                return res.status(400).json('Não foi possível atualizar o usuário no banco de dados');
             }
         } catch (error) {
             // Caso ocorra algum erro, este é registrado nos logs do servidor
             console.error(`Erro no modelo: ${error}`);
             // Retorna uma resposta com uma mensagem de erro
             return res.json({ mensagem: "Erro ao atualizar usuário." });
+        }
+    }
+
+    static async unico (req: Request, res: Response): Promise<any> {
+
+        try {
+            /*
+            const idParam = (req.params.id ?? req.query.idUsuario) as string;
+            const idUsuario = Number(idParam);*/
+            const idUsuario = parseInt(req.query.idUsuario as string);
+
+            if (!idUsuario || Number.isNaN(idUsuario)) {
+                return res.status(400).json
+                ({ mensagem: "Parâmetro idUsuario inválido ou ausente." });
+            }
+
+            const usuario = await Usuario.buscarPorId(idUsuario);
+            console.log(usuario);
+
+            if (!usuario) {
+                return res.status(404).json
+                ({ mensagem: "Usuário não encontrado." });
+            }
+
+            return res.status(200).json(usuario);
+
+        } catch (error) {
+            console.error(`Erro ao buscar usuário: ${error}`);
+            return res.status(500).json
+            ({ mensagem: "Erro ao buscar usuário." });
         }
     }
     
